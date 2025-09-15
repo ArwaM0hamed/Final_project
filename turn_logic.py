@@ -5,7 +5,7 @@ from std_msgs.msg import String
 #global variables
 score = 0
 
-def turn-callback(msg):
+def turn_callback(msg):
     global score
     turn_status = msg.data
 

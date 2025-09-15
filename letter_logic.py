@@ -36,7 +36,7 @@ def main():
 
     rospy.Subscriber('/letter_color', String, letter_callback)
     word_pub = rospy.Publisher('/formed_word', String, queue_size=10)
-    rospu.loginfo("maze logic node started")
+    rospy.loginfo("maze logic node started")
     rospy.spin()
 
 if __name__ == '__main__':
