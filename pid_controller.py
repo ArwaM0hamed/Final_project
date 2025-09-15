@@ -53,7 +53,7 @@ def forward(sensors):
         rospy.logerr("No sensor data available!")
         return
 
-    target_dist = 20
+    target_dist = 15
     target_yaw = sensors.yaw_rad()
     rate = rospy.Rate(10)
     last_time = rospy.Time.now()
@@ -104,7 +104,7 @@ def turn_right(sensors):
     rate = rospy.Rate(10)
     last_time = rospy.Time.now()
     start_time = last_time
-    max_turn_time = 990  # 5 seconds timeout
+    max_turn_time = 20  # 5 seconds timeout
     
     while not rospy.is_shutdown():
         now = rospy.Time.now()
@@ -153,7 +153,7 @@ def turn_left(sensors):
     rate = rospy.Rate(10)
     last_time = rospy.Time.now()
     start_time = last_time
-    max_turn_time = 999.0  # 5 seconds timeout
+    max_turn_time = 20  # 5 seconds timeout
     
     while not rospy.is_shutdown():
         now = rospy.Time.now()

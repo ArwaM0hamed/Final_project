@@ -59,62 +59,8 @@ def detection_callback(msg, sensors):
     action, value = handle_detection(detections)
     last_detection = (action, value)
     detection_received = True
-
-    if action == "collect" and value:
-        if len(collected_letters) < 5:
-            collected_letters.append(value)
-            score += 20
-            rospy.loginfo(f"Collected letter: {value}, Score: {score}")
-            if len(collected_letters) == 5:
-                word = "".join(collected_letters)
-                score += 80
-                rospy.loginfo(f"Final Word: {word}, Score: {score}")
-
-    elif action == "skip":
-        score -= 20
-        rospy.loginfo(f"Penalty! Red letter detected. Score: {score}")
-
-def wait_for_detection(timeout=3.0):
-    """Wait for a detection or timeout"""
-    global detection_received, last_detection
-    detection_received = False
-    start_time = rospy.Time.now()
-    rate = rospy.Rate(10)
-    
-    while not detection_received:
-        if (rospy.Time.now() - start_time).to_sec() > timeout:
-            rospy.logwarn("Detection timeout!")
-            return None
-        rate.sleep()
     
     return last_detection
-
-def forward_with_detection(sensors):
-    """Forward movement with detection handling"""
-    pid_controller.forward(sensors)
-    # After stopping, check for signs/letters
-    switch_to_signs()
-    rospy.sleep(0.5)  # Wait for image processing
-    action, value = wait_for_detection() or (None, None)
-    
-    if action == "turn" and value:
-        if value == "right":
-            pid_controller.turn_right(sensors)
-            rospy.loginfo("Turned Right")
-        elif value == "left":
-            pid_controller.turn_left(sensors)
-            rospy.loginfo("Turned Left")
-    else:
-        # If no sign detected, check for letters
-        switch_to_letters()
-        rospy.sleep(0.5)
-        action, value = wait_for_detection() or (None, None)
-        # Letter handling is done in detection_callback
-        if action in ["collect", "skip"]:
-            rospy.loginfo(f"Letter detected: {action} {value}")
-    
-    # Continue forward
-    pid_controller.forward(sensors)
 
 def main():
     rospy.init_node("maze_main_node")
@@ -137,7 +83,6 @@ def main():
         # Run one frame of inference and get detections
         detections = run_camera_inference(camera_index=2)  # You may want to refactor run_camera_inference to yield detections per frame
 
-        # Example: process detections
         if detections:
             action, value = handle_detection(detections)
             if action == "collect" and value:
@@ -145,14 +90,14 @@ def main():
                     print("Preparing to collect letter...")
                     collected_letters.append(value)
                     switch_to_signs()
-                    score =0
                     print(f"Collected letter: {value}")
+                    print("Switched to signs")
                     pid_controller.forward(sensors)
-                    print("finished forward 1")
             elif action == "skip":
                 score = 0
                 print(f"Penalty! Red letter detected.")
-            elif action == "turn" and value:
+                pid_controller.forward(sensors)
+            if action == "turn" and value:
                 if value == "right":
                     print("Preparing to turn right...")
                     switch_to_letters()
@@ -165,12 +110,12 @@ def main():
                     print("Turned Left")
             else:
                 print("No relevant detection, continue navigation...")
+
         else:
+
             print("going forward 2")
             switch_to_signs()
             pid_controller.forward(sensors)
-            print("finished forward 2")
-            print("No detections, continue navigation...")
             print("Switched to sign detection mode.")
             continue
             
