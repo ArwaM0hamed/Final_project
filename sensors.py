@@ -1,55 +1,67 @@
 #!/usr/bin/env python3
 import math
 import rospy
-from std_msgs.msg import Int16 , Int16MultiArray
+from std_msgs.msg import Int16, Int16MultiArray
 
-ul_list = None
-yaw = 0           # Global yaw variable
-current_yaw = 0   # Global current_yaw variable
+class SensorManager:
+    def __init__(self):
+        self.ul_list = None
+        self.yaw = 0
+        self.current_yaw = 0
+        self.data_received = False
+    
+    def ultrasonic_callback(self, msg):
+        self.ul_list = list(msg.data)
+        self.data_received = True
 
-def ultrasonic(msg):
-    global ul_list
-    ul_list = list(msg.data)
+    def imu_callback(self, msg):
+        self.yaw = msg.data
+        self.current_yaw = self.yaw
 
-def f_ultrasonic():
-    if ul_list is not None and len(ul_list) > 0:
-        return ul_list[0]
-    return None
+    def f_ultrasonic(self):
+        if self.ul_list is not None and len(self.ul_list) > 0:
+            return self.ul_list[0]
+        return None
 
-def r_ultrasonic():
-    if ul_list is not None and len(ul_list) > 1:
-        return ul_list[1]
-    return None
+    def r_ultrasonic(self):
+        if self.ul_list is not None and len(self.ul_list) > 1:
+            return self.ul_list[1]
+        return None
 
-def l_ultrasonic():
-    if ul_list is not None and len(ul_list) > 2:
-        return ul_list[2]
-    return None
+    def l_ultrasonic(self):
+        if self.ul_list is not None and len(self.ul_list) > 2:
+            return self.ul_list[2]
+        return None
 
-def imu(msg):
-    global yaw, current_yaw
-    yaw = msg.data
-    current_yaw = yaw
+    def yaw_degree(self):
+        return self.yaw
 
-def yaw_degree():
-    global yaw
-    return yaw
+    def yaw_rad(self):
+        return math.radians(self.yaw)
 
-def yaw_rad():
-    global yaw
-    return math.radians(yaw)
+    def start_node(self):
+        rospy.Subscriber("/yaw", Int16, self.imu_callback)
+        rospy.Subscriber("/ultrasonics", Int16MultiArray, self.ultrasonic_callback)
 
-def start_node():
-    rospy.Subscriber("/yaw", Int16, imu)
-    rospy.Subscriber("/ultrasonics", Int16MultiArray, ultrasonic)
+    def wait_for_data(self, timeout=5.0):
+        """Wait for sensor data to be received"""
+        start_time = rospy.Time.now()
+        rate = rospy.Rate(10)  # 10Hz
+        while not self.data_received:
+            if (rospy.Time.now() - start_time).to_sec() > timeout:
+                rospy.logwarn("Timeout waiting for sensor data!")
+                return False
+            rate.sleep()
+        return True
 
+# Optional: for standalone testing
 if __name__ == "__main__":
     rospy.init_node("deesha")
-    start_node()
-
-    rate = rospy.Rate(10)  # 10 Hz
+    sensors = SensorManager()
+    sensors.start_node()
+    rate = rospy.Rate(10)
     while not rospy.is_shutdown():
-        front = f_ultrasonic()
+        front = sensors.f_ultrasonic()
         if front is not None:
             rospy.loginfo(f"Front ultrasonic: {front}")
         rate.sleep()

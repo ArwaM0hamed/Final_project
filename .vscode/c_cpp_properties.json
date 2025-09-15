@@ -1,0 +1,36 @@
+{
+  "configurations": [
+    {
+      "browse": {
+        "databaseFilename": "${default}",
+        "limitSymbolsToIncludedHeaders": false
+      },
+      "includePath": [
+        "/opt/ros/noetic/include/**",
+        "/home/abdallah/catkin_ws/devel/include/**",
+        "/home/abdallah/catkin_ws/src/DynamixelSDK/ros/dynamixel_sdk/include/**",
+        "/home/abdallah/catkin_ws/src/dynamixel-workbench/dynamixel_workbench_controllers/include/**",
+        "/home/abdallah/catkin_ws/src/dynamixel-workbench/dynamixel_workbench_operators/include/**",
+        "/home/abdallah/catkin_ws/src/dynamixel-workbench/dynamixel_workbench_toolbox/include/**",
+        "/home/abdallah/catkin_ws/src/open_manipulator/open_manipulator_control_gui/include/**",
+        "/home/abdallah/catkin_ws/src/open_manipulator/open_manipulator_controller/include/**",
+        "/home/abdallah/catkin_ws/src/open_manipulator/open_manipulator_libs/include/**",
+        "/home/abdallah/catkin_ws/src/open_manipulator/open_manipulator_teleop/include/**",
+        "/home/abdallah/catkin_ws/src/open_manipulator_dependencies/roboticsgroup_gazebo_plugins/include/**",
+        "/home/abdallah/catkin_ws/src/robotis_manipulator/include/**",
+        "/home/abdallah/catkin_ws/src/turtlebot3_simulations/turtlebot3_fake/include/**",
+        "/home/abdallah/catkin_ws/src/turtlebot3_simulations/turtlebot3_gazebo/include/**",
+        "/home/abdallah/catkin_ws/src/turtlebot3_manipulation/turtlebot3_manipulation_bringup/include/**",
+        "/home/abdallah/catkin_ws/src/turtlebot3_manipulation/turtlebot3_manipulation_gui/include/**",
+        "/home/abdallah/catkin_ws/src/turtlebot3/turtlebot3_slam/include/**",
+        "/usr/include/**"
+      ],
+      "name": "ROS",
+      "intelliSenseMode": "gcc-x64",
+      "compilerPath": "/usr/bin/gcc",
+      "cStandard": "gnu11",
+      "cppStandard": "c++14"
+    }
+  ],
+  "version": 4
+}

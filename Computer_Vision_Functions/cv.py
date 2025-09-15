@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import rospy
 from sensor_msgs.msg import Image
 from std_msgs.msg import String
@@ -22,7 +23,6 @@ upper_red2 = np.array([180, 255, 255])
 
 def initialize_cv(): #Should be used in main file
     pub_detections = rospy.Publisher('/detections', String, queue_size=10)
-    rospy.Subscriber('/camera/image_raw', Image, process_image, callback_args=pub_detections)
     return pub_detections
 
 def switch_to_signs():
@@ -79,7 +79,6 @@ def process_image(msg, pub_detections):
         pub_detections.publish("\n".join(detections))
     return detections
 
-
 def handle_detection(detections):
     for det in detections or []:
         if "SAFE_LETTER" in det:
@@ -91,3 +90,55 @@ def handle_detection(detections):
             sign = det.split(": ")[1]
             return "turn", sign
     return "none", None
+
+def run_camera_inference(camera_index=2):
+    cap = cv2.VideoCapture(camera_index)
+    if not cap.isOpened():
+        print("Cannot open camera")
+        return
+
+    ret, frame = cap.read()
+    if not ret:
+        print("Can't receive frame (stream end?). Exiting ...")
+        cap.release()
+        return []
+
+    frame_resized = cv2.resize(frame, (640, 640))
+    results = current_model(frame_resized, verbose=False)
+    detections = []
+
+    for r in results:
+        boxes = r.boxes
+        for box in boxes:
+            cls = int(box.cls[0])
+            conf = float(box.conf[0])
+            if conf > 0.5:
+                x1, y1, x2, y2 = map(int, box.xyxy[0])
+                if is_letter_mode:
+                    letter = model_letters.names[cls]
+                    crop = frame_resized[max(0, y1-10):min(frame_resized.shape[0], y2+10),
+                                         max(0, x1-10):min(frame_resized.shape[1], x2+10)]
+                    if is_green_background(crop):
+                        detections.append(f"SAFE_LETTER: {letter}")
+                    else:
+                        detections.append(f"PENALTY_LETTER: {letter}")
+                else:
+                    sign = model_signs.names[cls]
+                    detections.append(f"SIGN: {sign}")
+
+    cap.release()
+    return detections
+
+if __name__ == "__main__":
+    # Test camera indices
+    for index in range(4):  # Try indices 0-3
+        print(f"Testing camera index {index}")
+        cap = cv2.VideoCapture(index)
+        if cap.isOpened():
+            ret, frame = cap.read()
+            if ret:
+                cv2.imshow(f"Camera {index}", frame)
+                cv2.waitKey(1000)  # Show for 1 second
+                print(f"Camera {index} works!")
+            cap.release()
+        cv2.destroyAllWindows()
