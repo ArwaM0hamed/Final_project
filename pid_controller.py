@@ -43,7 +43,7 @@ cmd_pub = rospy.Publisher("/cmd_vel", Twist, queue_size=10)
 rospy.Subscriber("/yaw", Int16, yaw_callback)
 
 rate = rospy.Rate(10)  # 10 Hz loop
-last_time = rospy.Time.now()   # ✅ safe to use here
+last_time = rospy.Time.now()   
 
 while not rospy.is_shutdown():
     now = rospy.Time.now()
