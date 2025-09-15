@@ -1,5 +1,6 @@
 import rospy
-from sensor_msgs.msg import Image, String
+from sensor_msgs.msg import Image
+from std_msgs.msg import String
 from cv_bridge import CvBridge, CvBridgeError
 import cv2
 import numpy as np
@@ -7,8 +8,8 @@ from ultralytics import YOLO
 
 
 bridge = CvBridge()
-model_letters = YOLO('alphabet.pt')
-model_signs = YOLO('SignModel.pt')
+model_letters = YOLO('Computer_Vision_Functions/alphabet.pt')
+model_signs = YOLO('Computer_Vision_Functions/SignModel.pt')
 current_model = model_letters
 is_letter_mode = True
 
@@ -20,7 +21,6 @@ lower_red2 = np.array([170, 50, 50])
 upper_red2 = np.array([180, 255, 255])
 
 def initialize_cv(): #Should be used in main file
-    rospy.init_node('cv_node', anonymous=True)
     pub_detections = rospy.Publisher('/detections', String, queue_size=10)
     rospy.Subscriber('/camera/image_raw', Image, process_image, callback_args=pub_detections)
     return pub_detections
@@ -79,8 +79,6 @@ def process_image(msg, pub_detections):
         pub_detections.publish("\n".join(detections))
     return detections
 
-def image_callback(msg, pub_detections):
-    return process_image(msg, pub_detections)
 
 def handle_detection(detections):
     for det in detections or []:

@@ -2,7 +2,7 @@
 import rospy
 import sensors
 import pid_controller
-from sensor_msgs.msg import String
+from std_msgs.msg import String
 from Computer_Vision_Functions.cv import initialize_cv, handle_detection, switch_to_letters, switch_to_signs
 
 # def usage_examples():
@@ -86,7 +86,7 @@ def detection_callback(msg):
             rospy.loginfo("Turned Right")
 
         elif value == "left":
-            pid_controller.turn_left
+            pid_controller.turn_left5
             rospy.loginfo("Turned Left")
 
     else:
@@ -100,16 +100,19 @@ def main():
 
     # Publisher & Subscriber
     rospy.Subscriber("/detections", String, detection_callback)
-
     # Start nodes
-    sensors.start_node()
     pid_controller.start_node()
-
+    print("test")
+    pid_controller.start_node()
     # Start CV node
     initialize_cv()
-    switch_to_letters()
+    switch_to_signs()
 
     rospy.loginfo("Maze main node started.")
+
+    pid_controller.forward()
+
+
     rospy.spin()
 
 if __name__ == "__main__":

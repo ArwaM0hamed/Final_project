@@ -71,7 +71,7 @@ def pid_control_d(error,dt):
 # --- Movement functions ---
 def forward():
     global target_yaw
-    
+
     target_dist = 5 # stop at 5 cm
     target_yaw = sensors.yaw_rad()  # keep current heading as reference
 
@@ -84,9 +84,15 @@ def forward():
         dt = (now - last_time).to_sec()
         last_time = now
 
-        # sensors
+        # Get sensor values
         front = sensors.f_ultrasonic()
         current_yaw = sensors.yaw_rad()
+
+        # Wait for valid data
+        if front is None:
+            rospy.logwarn("Waiting for front ultrasonic data...")
+            rate.sleep()
+            continue
 
         # distance pid
         dist_error = front - target_dist   # positive if too far
@@ -107,7 +113,7 @@ def forward():
         twist.angular.z = correction
         cmd_pub.publish(twist)
 
-        if abs(dist_error) < 1:   # 1 cm tresholding
+        if abs(dist_error) < 1:   # 1 cm threshold
             stop()
             break
         rate.sleep()
@@ -174,9 +180,9 @@ def turn_left():
 
 def start_node():
     global cmd_pub
-    rospy.init_node("simple_pid_controller")
+
     cmd_pub = rospy.Publisher("/cmd_vel", Twist, queue_size=10)
-    rospy.spin()
+
 
     
 # --- Main program ---
