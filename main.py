@@ -5,7 +5,6 @@ import pid_controller
 from Computer_Vision_Functions.cv import initialize_cv, handle_detection, switch_to_letters, switch_to_signs
 
 def usage_examples():
-
     # sensor functions:
     sensors.start_node() # Start the sensors node
     sensors.f_ultrasonic() # Returns front ultrasonic distance reading
@@ -26,9 +25,9 @@ def usage_examples():
 
     # PID functions
     pid_controller.start_node()
-    pid_controller.forward()
+    pid_controller.forward() # keeps moving forward until dist between the robot and the wall is 5cm
     pid_controller.turn_left() # turns 90 degrees left 
-    pid_controller.turn_righ() # turns 90 degrees right
+    pid_controller.turn_right() # turns 90 degrees right
     pid_controller.stop()
 
 if __name__ == "__main__":
@@ -39,9 +38,3 @@ if __name__ == "__main__":
     pid_controller.start_node()
 
     # main logic
-    switch_to_signs()
-    if "right" : # should be updated by moustafa to use yolo model _______________________________
-
-
-
-

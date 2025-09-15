@@ -5,14 +5,23 @@ import math
 from geometry_msgs.msg import Twist
 
 # --- PID parameters ---
-Kp = 0.5
-Ki = 0.01
-Kd = 0.1
+Kp_yaw = 0.5
+Ki_yaw = 0.01
+Kd_yaw = 0.1
+Kp_d = 0.5
+Ki_d = 0.01
+Kd_d = 0.1
+
+# --- other parameters ---
+max_speed = 0.3
 
 # --- State variables ---
 target_yaw = 0
-prev_error = 0
-integral = 0
+prev_error_yaw = 0
+integral_yaw = 0
+
+prev_error_d = 0
+integral_d = 0
 
 # --- Globals ---
 cmd_pub = None   # publisher will be initialized in start_node()
@@ -26,34 +35,90 @@ def normalize_angle(angle):
     return angle
 
 # --- PID function ---
-def pid_control(error, dt):
-    global integral, prev_error
+def pid_control_yaw(error, dt):
+    global integral_yaw, prev_error_yaw
 
-    # Integral term
-    integral += error * dt
+    # integral term
+    integral_yaw += error * dt
 
     # Derivative term
-    derivative = (error - prev_error) / dt if dt > 0 else 0
+    derivative = (error - prev_error_yaw) / dt if dt > 0 else 0
 
     # PID formula
-    output = (Kp * error) + (Ki * integral) + (Kd * derivative)
+    output = (Kp_yaw * error) + (Ki_yaw * integral_yaw) + (Kd_yaw * derivative)
 
     # Save error for next loop
-    prev_error = error
+    prev_error_yaw = error
     return output
+
+def pid_control_d(error,dt):
+    global integral_d, prev_error_d
+
+    # integral term
+    integral_d += error * dt
+
+    # Derivative term
+    derivative = (error - prev_error_d) / dt if dt > 0 else 0
+
+    # PID formula
+    output = (Kp_d * error) + (Ki_d * integral_d) + (Kd_d * derivative)
+
+    # Save error for next loop
+    prev_error_d = error
+    return output
+
 
 # --- Movement functions ---
 def forward():
-    """Go forward with constant speed"""
-    twist = Twist()
-    twist.linear.x = 0.2
-    twist.angular.z = 0.0
-    cmd_pub.publish(twist)
+    global target_yaw
+    
+    target_dist = 5 # stop at 5 cm
+    target_yaw = sensors.yaw_rad()  # keep current heading as reference
+
+    rate = rospy.Rate(10)
+    last_time = rospy.Time.now()
+
+    while not rospy.is_shutdown():
+        # --- Time step ---
+        now = rospy.Time.now()
+        dt = (now - last_time).to_sec()
+        last_time = now
+
+        # sensors
+        front = sensors.f_ultrasonic()
+        current_yaw = sensors.yaw_rad()
+
+        # distance pid
+        dist_error = front - target_dist   # positive if too far
+        speed = pid_control_d(dist_error, dt)
+
+        # yaw pid to stay straight
+        yaw_error = normalize_angle(target_yaw - current_yaw)
+        correction = pid_control_yaw(yaw_error, dt)
+
+        # --- Clamp linear speed ---
+        if speed > max_speed:
+            speed = max_speed
+        if speed < 0.0:
+            speed = 0.0
+
+        twist = Twist()
+        twist.linear.x = speed
+        twist.angular.z = correction
+        cmd_pub.publish(twist)
+
+        if abs(dist_error) < 1:   # 1 cm tresholding
+            stop()
+            break
+        rate.sleep()
+
 
 def stop():
-    """Stop robot"""
     twist = Twist()
-    cmd_pub.publish(twist)
+    for _ in range(5): # send zeros multiple time 
+        cmd_pub.publish(twist)
+        rospy.sleep(0.05)
+
 
 def turn_right():
     """Rotate 90° right"""
@@ -75,7 +140,7 @@ def turn_right():
             stop()
             break
 
-        correction = pid_control(error, dt)
+        correction = pid_control_yaw(error, dt)
         twist = Twist()
         twist.angular.z = correction
         cmd_pub.publish(twist)
@@ -96,12 +161,12 @@ def turn_left():
         last_time = now
 
         current_yaw = sensors.yaw_rad()
-        error = normalize_angle(target_yaw + current_yaw)
+        error = normalize_angle(target_yaw - current_yaw)
         if abs(error) < 0.035:  # within 2 degrees
             stop()
             break
 
-        correction = pid_control(error, dt)
+        correction = pid_control_yaw(error, dt)
         twist = Twist()
         twist.angular.z = correction
         cmd_pub.publish(twist)
