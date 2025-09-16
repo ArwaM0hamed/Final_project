@@ -120,6 +120,9 @@ def turn_right(sensors):
         # Check if we've reached target angle (within ~2 degrees)
         if abs(error) < 0.1:
             rospy.loginfo("Target angle reached!")
+            # Reset target_yaw to current position after turn
+            target_yaw = sensors.yaw_rad()
+            integral_yaw = 0  # Reset integral
             for _ in range(5):  # Multiple stop commands
                 stop()
                 rospy.sleep(0.1)
@@ -169,6 +172,9 @@ def turn_left(sensors):
         # Check if we've reached target angle (within ~2 degrees)
         if abs(error) < 0.1:
             rospy.loginfo("Target angle reached!")
+            # Reset target_yaw to current position after turn
+            target_yaw = sensors.yaw_rad()
+            integral_yaw = 0  # Reset integral
             for _ in range(5):  # Multiple stop commands
                 stop()
                 rospy.sleep(0.1)
