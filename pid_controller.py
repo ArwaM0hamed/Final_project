@@ -22,6 +22,8 @@ integral_d = 0
 
 cmd_pub = None
 
+yaw_zero_offset = 0  # Add this global variable
+
 def normalize_angle(angle):
     while angle > math.pi:
         angle -= 2*math.pi
@@ -45,8 +47,119 @@ def pid_control_d(error, dt):
     prev_error_d = error
     return output
 
+def reset_yaw_zero(sensors):
+    """Call this to set the current yaw as zero reference."""
+    global yaw_zero_offset
+    yaw_zero_offset = sensors.yaw_rad()
+
+def get_zeroed_yaw(sensors):
+    """Returns the yaw relative to the last zero."""
+    return normalize_angle(sensors.yaw_rad() - yaw_zero_offset)
+
+def stop():
+    twist = Twist()
+    for _ in range(5):
+        cmd_pub.publish(twist)
+        rospy.sleep(0.05)
+
+def turn_right(sensors):
+    global target_yaw, integral_yaw, prev_error_yaw
+    # Reset PID variables
+    integral_yaw = 0
+    prev_error_yaw = 0
+    
+    current_yaw = get_zeroed_yaw(sensors)
+    target_yaw = normalize_angle(current_yaw - math.pi/2)  # -90 degrees relative to current
+    
+    rate = rospy.Rate(10)
+    last_time = rospy.Time.now()
+    start_time = last_time
+    max_turn_time = 20  # 5 seconds timeout
+    
+    while not rospy.is_shutdown():
+        now = rospy.Time.now()
+        dt = (now - last_time).to_sec()
+        last_time = now
+        
+        current_yaw = get_zeroed_yaw(sensors)
+        error = normalize_angle(target_yaw - current_yaw)
+        
+        # Debug output
+        rospy.loginfo(f"Target: {math.degrees(target_yaw):.1f}°, Current: {math.degrees(current_yaw):.1f}°, Error: {math.degrees(error):.1f}°")
+        
+        # Check if we've reached target angle (within ~2 degrees)
+        if abs(error) < 0.05:  # Reduced tolerance
+            rospy.loginfo("Target angle reached!")
+            stop()
+            return
+            
+        # Timeout check
+        if (now - start_time).to_sec() > max_turn_time:
+            rospy.logwarn("Turn right timeout!")
+            stop()
+            return
+            
+        correction = pid_control_yaw(error, dt)
+        # Less aggressive correction limiting
+        correction = max(min(correction, 1.0), -1.0)
+        
+        twist = Twist()
+        twist.angular.z = correction
+        cmd_pub.publish(twist)
+        rate.sleep()
+
+def turn_left(sensors):
+    global target_yaw, integral_yaw, prev_error_yaw
+    # Reset PID variables
+    integral_yaw = 0
+    prev_error_yaw = 0
+    
+    current_yaw = get_zeroed_yaw(sensors)
+    target_yaw = normalize_angle(current_yaw + math.pi/2)  # 90 degrees relative to current
+    
+    rate = rospy.Rate(10)
+    last_time = rospy.Time.now()
+    start_time = last_time
+    max_turn_time = 20  # 5 seconds timeout
+    
+    while not rospy.is_shutdown():
+        now = rospy.Time.now()
+        dt = (now - last_time).to_sec()
+        last_time = now
+        
+        current_yaw = get_zeroed_yaw(sensors)
+        error = normalize_angle(target_yaw - current_yaw)
+        
+        # Debug output
+        rospy.loginfo(f"Target: {math.degrees(target_yaw):.1f}°, Current: {math.degrees(current_yaw):.1f}°, Error: {math.degrees(error):.1f}°")
+        
+        # Check if we've reached target angle (within ~2 degrees)
+        if abs(error) < 0.05:  # Reduced tolerance
+            rospy.loginfo("Target angle reached!")
+            stop()
+            return
+            
+        # Timeout check
+        if (now - start_time).to_sec() > max_turn_time:
+            rospy.logwarn("Turn left timeout!")
+            stop()
+            return
+            
+        correction = pid_control_yaw(error, dt)
+        # Less aggressive correction limiting
+        correction = max(min(correction, 1.0), -1.0)
+        
+        twist = Twist()
+        twist.angular.z = correction
+        cmd_pub.publish(twist)
+        rate.sleep()
+
 def forward(sensors):
-    global target_yaw
+    global target_yaw, integral_yaw, prev_error_yaw
+    
+    # Reset PID variables before forward
+    integral_yaw = 0
+    prev_error_yaw = 0
     
     # Wait for initial sensor data
     if not sensors.wait_for_data():
@@ -54,7 +167,8 @@ def forward(sensors):
         return
 
     target_dist = 15
-    target_yaw = sensors.yaw_rad()
+    # Use zeroed yaw as reference
+    target_yaw = 0  # Always go "straight" from the reset point
     rate = rospy.Rate(10)
     last_time = rospy.Time.now()
     while not rospy.is_shutdown():
@@ -62,7 +176,7 @@ def forward(sensors):
         dt = (now - last_time).to_sec()
         last_time = now
         front = sensors.f_ultrasonic()
-        current_yaw = sensors.yaw_rad()
+        current_yaw = get_zeroed_yaw(sensors)
         while front is None:
             rospy.logwarn("Waiting for front ultrasonic data...")
             rate.sleep()
@@ -81,113 +195,9 @@ def forward(sensors):
         twist.linear.x = speed
         twist.angular.z = correction
         cmd_pub.publish(twist)
-        if abs(dist_error) < 2:
+        if abs(dist_error) < 5:
             stop()
             break
-        rate.sleep()
-
-def stop():
-    twist = Twist()
-    for _ in range(5):
-        cmd_pub.publish(twist)
-        rospy.sleep(0.05)
-
-def turn_right(sensors):
-    global target_yaw, integral_yaw, prev_error_yaw
-    # Reset PID variables
-    integral_yaw = 0
-    prev_error_yaw = 0
-    
-    start_yaw = sensors.yaw_rad()
-    target_yaw = normalize_angle(start_yaw - math.pi/2)  # -90 degrees
-    
-    rate = rospy.Rate(10)
-    last_time = rospy.Time.now()
-    start_time = last_time
-    max_turn_time = 20  # 5 seconds timeout
-    
-    while not rospy.is_shutdown():
-        now = rospy.Time.now()
-        dt = (now - last_time).to_sec()
-        last_time = now
-        
-        current_yaw = sensors.yaw_rad()
-        error = normalize_angle(target_yaw - current_yaw)
-        
-        # Debug output
-        rospy.loginfo(f"Target: {math.degrees(target_yaw):.1f}°, Current: {math.degrees(current_yaw):.1f}°, Error: {math.degrees(error):.1f}°")
-        
-        # Check if we've reached target angle (within ~2 degrees)
-        if abs(error) < 0.1:
-            rospy.loginfo("Target angle reached!")
-            for _ in range(5):  # Multiple stop commands
-                stop()
-                rospy.sleep(0.1)
-                break
-            return
-            
-        # Timeout check
-        if (now - start_time).to_sec() > max_turn_time:
-            rospy.logwarn("Turn right timeout!")
-            stop()
-            return
-            
-        correction = pid_control_yaw(error, dt)
-        # More aggressive correction limiting
-        correction = max(min(correction, 0.8), -0.8)
-        
-        twist = Twist()
-        twist.angular.z = correction
-        cmd_pub.publish(twist)
-        rate.sleep()
-
-def turn_left(sensors):
-    global target_yaw, integral_yaw, prev_error_yaw
-    # Reset PID variables
-    integral_yaw = 0
-    prev_error_yaw = 0
-    
-    start_yaw = sensors.yaw_rad()
-    target_yaw = normalize_angle(start_yaw + math.pi/2)  # 90 degrees
-    
-    rate = rospy.Rate(10)
-    last_time = rospy.Time.now()
-    start_time = last_time
-    max_turn_time = 20  # 5 seconds timeout
-    
-    while not rospy.is_shutdown():
-        now = rospy.Time.now()
-        dt = (now - last_time).to_sec()
-        last_time = now
-        
-        current_yaw = sensors.yaw_rad()
-        error = normalize_angle(target_yaw - current_yaw)
-        
-        # Debug output
-        rospy.loginfo(f"Target: {math.degrees(target_yaw):.1f}°, Current: {math.degrees(current_yaw):.1f}°, Error: {math.degrees(error):.1f}°")
-        
-        # Check if we've reached target angle (within ~2 degrees)
-        if abs(error) < 0.1:
-            rospy.loginfo("Target angle reached!")
-            for _ in range(5):  # Multiple stop commands
-                stop()
-                rospy.sleep(0.1)
-                break
-            return
-            
-        # Timeout check
-        if (now - start_time).to_sec() > max_turn_time:
-            rospy.logwarn("Turn left timeout!")
-            stop()
-            return
-            
-        correction = pid_control_yaw(error, dt)
-        # Limit correction magnitude
-        correction = max(min(correction, 1.0), -1.0)
-        
-        twist = Twist()
-        twist.angular.z = correction
-        cmd_pub.publish(twist)
         rate.sleep()
 
 def start_node():
