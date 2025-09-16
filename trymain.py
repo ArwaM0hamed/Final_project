@@ -102,8 +102,7 @@ def main():
                 elif left < 20 and right > 20:
                     pid_controller.turn_right(sensors)
                 else:
-                    pass
-                    # should move small distance on y axis
+                    
 
                 print("here 3 ")
             else:
@@ -112,5 +111,56 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+                    pid_controller.linear_right()
+                    switch_to_signs()
+                    time.sleep(0.5)
+                    switch_to_letters()
+                    time.sleep(0.5)
+                    if detections:
+                        break
+                    pid_controller.linear_left()
+                    switch_to_signs()
+                    time.sleep(0.5)
+                    switch_to_letters()
+                    time.sleep(0.5)
+                    if detections:
+                        break
+
+
+
+    def linear_right():
+        now = rospy.Time.now()
+        last_time = rospy.Time.now()
+
+        max_r_time = 2
+
+        while not rospy.is_shutdown():
+            twist = Twist()
+            twist.linear.y = -0.5  # Move right
+            twist.linear.x = 0.0
+            twist.angular.z = 0
+            cmd_pub.publish(twist)
+            if (now - start_time).to_sec() > max_r_time:
+                rospy.logwarn("linear right timeout!")
+                stop()
+                return
+
+    def linear_left():
+        now = rospy.Time.now()
+        last_time = rospy.Time.now()
+
+        max_l_time = 3
+
+        while not rospy.is_shutdown():
+            twist = Twist()
+            twist.linear.y = 0.5  # Move left
+            twist.linear.x = 0.0
+            twist.angular.z = 0
+            cmd_pub.publish(twist)
+            if (now - start_time).to_sec() > max_l_time:
+                rospy.logwarn("linear left timeout!")
+                stop()
+                return
 
 
