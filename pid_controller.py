@@ -12,7 +12,7 @@ Kp_d = 0.5
 Ki_d = 0.01
 Kd_d = 0.1
 
-max_speed = 1
+max_speed = 0.5
 
 target_yaw = 0
 prev_error_yaw = 0
