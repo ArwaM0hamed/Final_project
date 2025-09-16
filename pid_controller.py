@@ -3,11 +3,14 @@ import rospy
 import math
 from geometry_msgs.msg import Twist
 from sensors import SensorManager
+import pid_controller
+from Computer_Vision_Functions.cv import initialize_cv, handle_detection, switch_to_letters, switch_to_signs, process_image, run_camera_inference
+
 
 # --- PID parameters ---
-Kp_yaw = 0.2
+Kp_yaw = 0.4
 Ki_yaw = 0.01
-Kd_yaw = 0.1
+Kd_yaw = 0.05
 Kp_d = 0.5
 Ki_d = 0.01
 Kd_d = 0.1
@@ -74,7 +77,7 @@ def turn_right(sensors):
     rate = rospy.Rate(20)
     last_time = rospy.Time.now()
     start_time = last_time
-    max_turn_time = 20  # 5 seconds timeout
+    max_turn_time = 9 # 5 seconds timeout
     
     while not rospy.is_shutdown():
         now = rospy.Time.now()
@@ -103,6 +106,10 @@ def turn_right(sensors):
         # Less aggressive correction limiting
         correction = max(min(correction, 1.0), -1.0)
         
+        # Increase turning speed
+        turn_speed_factor = 5.0  # Adjust this value to control the turning speed
+        correction *= turn_speed_factor
+        
         twist = Twist()
         twist.angular.z = correction
         cmd_pub.publish(twist)
@@ -120,7 +127,7 @@ def turn_left(sensors):
     rate = rospy.Rate(20)
     last_time = rospy.Time.now()
     start_time = last_time
-    max_turn_time = 20  # 5 seconds timeout
+    max_turn_time = 9  # 5 seconds timeout
     
     while not rospy.is_shutdown():
         now = rospy.Time.now()
@@ -149,6 +156,10 @@ def turn_left(sensors):
         # Less aggressive correction limiting
         correction = max(min(correction, 1.0), -1.0)
         
+        # Increase turning speed
+        turn_speed_factor = 5.0  # Adjust this value to control the turning speed
+        correction *= turn_speed_factor
+        
         twist = Twist()
         twist.angular.z = correction
         cmd_pub.publish(twist)
@@ -160,13 +171,8 @@ def forward(sensors):
     # Reset PID variables before forward
     integral_yaw = 0
     prev_error_yaw = 0
-    
-    # Wait for initial sensor data
-    if not sensors.wait_for_data():
-        rospy.logerr("No sensor data available!")
-        return
 
-    target_dist = 7
+    target_dist = 12
     # Use zeroed yaw as reference
     target_yaw = 0  # Always go "straight" from the reset point
     rate = rospy.Rate(10)
@@ -195,10 +201,92 @@ def forward(sensors):
         twist.linear.x = speed
         twist.angular.z = correction
         cmd_pub.publish(twist)
-        if abs(dist_error) < 7: 
+        if abs(dist_error) < 4 or front <12: 
             stop()
             break
         rate.sleep()
+
+def linear_right():
+        now = rospy.Time.now()
+        last_time = rospy.Time.now()
+
+        max_r_time = 2
+
+        while not rospy.is_shutdown():
+            twist = Twist()
+            twist.linear.y = -0.5  # Move right
+            twist.linear.x = 0.0
+            twist.angular.z = 0
+            now = rospy.Time.now()
+
+            cmd_pub.publish(twist)
+            if (now - last_time).to_sec() > max_r_time:
+                rospy.logwarn("linear right timeout!")
+                stop()
+                return
+
+def linear_left():
+    now = rospy.Time.now()
+    last_time = rospy.Time.now()
+
+    max_l_time = 3
+
+    while not rospy.is_shutdown():
+        twist = Twist()
+        twist.linear.y = 0.5  # Move left
+        twist.linear.x = 0.0
+        twist.angular.z = 0
+        cmd_pub.publish(twist)
+        now = rospy.Time.now()
+        if (now - last_time).to_sec() > max_l_time:
+            rospy.logwarn("linear left timeout!")
+            stop()
+            return
+        
+def back(sensors):   # <-- add sensors argument
+    now = rospy.Time.now()
+    last_time = rospy.Time.now()
+    max_b_time = 2
+
+    while not rospy.is_shutdown():
+        twist = Twist()
+        twist.linear.x = -0.5  # Move backward
+        twist.linear.y = 0.0
+        twist.angular.z = 0
+        cmd_pub.publish(twist)
+
+        now = rospy.Time.now()
+        if (now - last_time).to_sec() > max_b_time:
+            rospy.logwarn("backward timeout!")
+            stop()
+
+            detections = run_camera_inference(camera_index=2)
+
+            twist.linear.x = 0.5
+            cmd_pub.publish(twist)
+            if (now - last_time).to_sec() > max_b_time * 2 + 0.5:
+                stop()
+            if detections:
+                action, value = handle_detection(detections)
+                rospy.loginfo(f"Detections during back: {detections}")
+
+                if action == "collect" and value:
+                    rospy.loginfo(f"Collecting letter: {value}")
+                    switch_to_signs()
+                    pid_controller.forward(sensors)
+
+                elif action == "skip":
+                    rospy.loginfo("Penalty letter detected, skipping...")
+                    pid_controller.forward(sensors)
+
+                elif action == "turn" and value:
+                    rospy.loginfo(f"Sign detected: {value}")
+                    if value == "right":
+                        pid_controller.turn_right(sensors)
+                    elif value == "left":
+                        pid_controller.turn_left(sensors)
+            return    
+
 
 def start_node():
     global cmd_pub

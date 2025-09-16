@@ -98,13 +98,12 @@ def main():
                 right = sensors.r_ultrasonic()
                 left = sensors.l_ultrasonic()
                 if right < 20 and left > 20:
-                    pid_controller.back(sensors)
                     pid_controller.turn_left(sensors)
                 elif left < 20 and right > 20:
-                    pid_controller.back(sensors)
                     pid_controller.turn_right(sensors)
                 else:
-                    pid_controller.back(sensors)
+                    pass
+                    # should move small distance on y axis
 
                 print("here 3 ")
             else:
