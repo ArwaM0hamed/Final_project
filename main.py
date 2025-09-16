@@ -56,24 +56,26 @@ def main():
                     print("Switched to signs")
                     pid_controller.reset_yaw_zero(sensors)  # Reset before moving forward
                     pid_controller.forward(sensors)
+                    print("forward done")
+                    continue
             elif action == "skip":
                 print(f"Penalty! Red letter detected.")
                 print("I DIDNT TAKE THE RED LETTER AND KEPT MOVING")
-                pid_controller.reset_yaw_zero(sensors)  # Reset before moving forward
+                pid_controller.reset_yaw_zero(sensors) 
                 pid_controller.forward(sensors)
             if action == "turn" and value:
                 if value == "right":
                     print("Preparing to turn right...")
                     switch_to_letters()
-                    pid_controller.turn_right(sensors)  # <--- Do NOT reset yaw here
+                    pid_controller.turn_right(sensors)
                     print("Turned Right")
-                    pid_controller.reset_yaw_zero(sensors)  # <--- Reset after turn, before next forward
+                    pid_controller.reset_yaw_zero(sensors) 
                 elif value == "left":
                     print("Preparing to turn left...")
                     switch_to_letters()
-                    pid_controller.turn_left(sensors)  # <--- Do NOT reset yaw here
+                    pid_controller.turn_left(sensors)  
                     print("Turned Left")
-                    pid_controller.reset_yaw_zero(sensors)  # <--- Reset after turn, before next forward
+                    pid_controller.reset_yaw_zero(sensors)  
             else:
                 print("No relevant detection, continue navigation...")
 
@@ -107,13 +109,13 @@ def main():
                 time.sleep(1.5)
                 switch_to_letters()
                 time.sleep(1.5)
-                pid_controller.turn_left(sensors)  # <--- Do NOT reset yaw here
+                pid_controller.turn_left(sensors) 
                 pid_controller.reset_yaw_zero(sensors)
                 switch_to_signs()
                 time.sleep(1.5)
                 switch_to_letters()
                 time.sleep(1.5)
-                pid_controller.turn_left(sensors)  # <--- Do NOT reset yaw here
+                pid_controller.turn_left(sensors)
                 pid_controller.reset_yaw_zero(sensors)
                 switch_to_signs()
                 time.sleep(1.5)
@@ -125,7 +127,7 @@ def main():
                 switch_to_letters()
                 time.sleep(1.5)
                 pid_controller.reset_yaw_zero(sensors)
-                pid_controller.turn_right(sensors)  # <--- Do NOT reset yaw here
+                pid_controller.turn_right(sensors)
                 pid_controller.reset_yaw_zero(sensors)
                 switch_to_signs()
                 time.sleep(1.5)

@@ -61,7 +61,7 @@ def process_image(msg, pub_detections):
         for box in boxes:
             cls = int(box.cls[0])
             conf = float(box.conf[0])
-            if conf > 0.5:
+            if conf > 0.3:
                 x1, y1, x2, y2 = map(int, box.xyxy[0])
                 if is_letter_mode:
                     letter = model_letters.names[cls]

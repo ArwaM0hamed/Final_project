@@ -5,7 +5,7 @@ from geometry_msgs.msg import Twist
 from sensors import SensorManager
 
 # --- PID parameters ---
-Kp_yaw = 0.5
+Kp_yaw = 0.2
 Ki_yaw = 0.01
 Kd_yaw = 0.1
 Kp_d = 0.5
@@ -71,7 +71,7 @@ def turn_right(sensors):
     current_yaw = get_zeroed_yaw(sensors)
     target_yaw = normalize_angle(current_yaw - math.pi/2)  # -90 degrees relative to current
     
-    rate = rospy.Rate(10)
+    rate = rospy.Rate(20)
     last_time = rospy.Time.now()
     start_time = last_time
     max_turn_time = 20  # 5 seconds timeout
@@ -117,7 +117,7 @@ def turn_left(sensors):
     current_yaw = get_zeroed_yaw(sensors)
     target_yaw = normalize_angle(current_yaw + math.pi/2)  # 90 degrees relative to current
     
-    rate = rospy.Rate(10)
+    rate = rospy.Rate(20)
     last_time = rospy.Time.now()
     start_time = last_time
     max_turn_time = 20  # 5 seconds timeout
@@ -166,7 +166,7 @@ def forward(sensors):
         rospy.logerr("No sensor data available!")
         return
 
-    target_dist = 15
+    target_dist = 7
     # Use zeroed yaw as reference
     target_yaw = 0  # Always go "straight" from the reset point
     rate = rospy.Rate(10)
@@ -195,7 +195,7 @@ def forward(sensors):
         twist.linear.x = speed
         twist.angular.z = correction
         cmd_pub.publish(twist)
-        if abs(dist_error) < 5:
+        if abs(dist_error) < 7: 
             stop()
             break
         rate.sleep()
