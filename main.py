@@ -3,6 +3,7 @@ import rospy
 from sensors import SensorManager
 import pid_controller
 from std_msgs.msg import String
+import time
 from Computer_Vision_Functions.cv import initialize_cv, handle_detection, switch_to_letters, switch_to_signs, process_image, run_camera_inference
 
 # def usage_examples():
@@ -94,8 +95,8 @@ def main():
                     print("Switched to signs")
                     pid_controller.forward(sensors)
             elif action == "skip":
-                score = 0
                 print(f"Penalty! Red letter detected.")
+                print("I DIDNT TAKE THE RED LETTER AND KEPT MOVING")
                 pid_controller.forward(sensors)
             if action == "turn" and value:
                 if value == "right":
@@ -112,12 +113,40 @@ def main():
                 print("No relevant detection, continue navigation...")
 
         else:
-
-            print("going forward 2")
+            action, value = handle_detection(detections)
             switch_to_signs()
-            pid_controller.forward(sensors)
-            print("Switched to sign detection mode.")
-            continue
+            time.sleep(1.5)
+            switch_to_letters()
+            time.sleep(1.5)
+            while not detections:
+                pid_controller.forward(sensors)
+                switch_to_signs()
+                time.sleep(1.5)
+                switch_to_letters()
+                time.sleep(1.5)
+                pid_controller.turn_right(sensors)
+                switch_to_signs()
+                time.sleep(1.5)
+                switch_to_letters()
+                time.sleep(1.5)
+                pid_controller.forward(sensors)
+                switch_to_signs()
+                time.sleep(1.5)
+                switch_to_letters()
+                time.sleep(1.5)
+                pid_controller.turn_left(sensors)
+                switch_to_signs()
+                time.sleep(1.5)
+                switch_to_letters()
+                time.sleep(1.5)
+                pid_controller.turn_left(sensors)
+                switch_to_signs()
+                time.sleep(1.5)
+                switch_to_letters()
+                time.sleep(1.5)
+                pid_controller.forward(sensors)
+            else:
+                continue
             
 
 if __name__ == "__main__":
