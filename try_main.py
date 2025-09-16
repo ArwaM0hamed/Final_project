@@ -92,58 +92,20 @@ def main():
                 time.sleep(0.5)
                 switch_to_letters()
                 time.sleep(0.5)
+                if detections:
+                    break
                 print("here 2 ")
-                pid_controller.turn_right(sensors) 
-                pid_controller.reset_yaw_zero(sensors)  
-                switch_to_signs()
-                time.sleep(1.5)
-                switch_to_letters()
-                time.sleep(1.5)
+                right = sensors.r_ultrasonic()
+                left = sensors.l_ultrasonic()
+                if right < 20 and left > 20:
+                    pid_controller.turn_left(sensors)
+                elif left < 20 and right > 20:
+                    pid_controller.turn_right(sensors)
+                else:
+                    pass
+                    # should move small distance on y axis
+
                 print("here 3 ")
-                pid_controller.forward(sensors)
-                print("here 4")
-                pid_controller.reset_yaw_zero(sensors)
-                switch_to_signs()
-                time.sleep(1.5)
-                switch_to_letters()
-                time.sleep(1.5)
-                pid_controller.turn_left(sensors)  # <--- Do NOT reset yaw here
-                pid_controller.reset_yaw_zero(sensors)
-                switch_to_signs()
-                time.sleep(1.5)
-                switch_to_letters()
-                time.sleep(1.5)
-                pid_controller.turn_left(sensors)  # <--- Do NOT reset yaw here
-                pid_controller.reset_yaw_zero(sensors)
-                switch_to_signs()
-                time.sleep(1.5)
-                switch_to_letters()
-                time.sleep(1.5)
-                pid_controller.forward(sensors)
-                switch_to_signs()
-                time.sleep(1.5)
-                switch_to_letters()
-                time.sleep(1.5)
-                pid_controller.reset_yaw_zero(sensors)
-                pid_controller.turn_right(sensors)  # <--- Do NOT reset yaw here
-                pid_controller.reset_yaw_zero(sensors)
-                switch_to_signs()
-                time.sleep(1.5)
-                switch_to_letters()
-                time.sleep(1.5)
-                pid_controller.turn_left(sensors)
-                switch_to_signs()
-                time.sleep(1.5)
-                switch_to_letters()
-                time.sleep(1.5)
-                pid_controller.reset_yaw_zero(sensors)
-                pid_controller.turn_left(sensors)
-                switch_to_signs()
-                time.sleep(1.5)
-                switch_to_letters()
-                time.sleep(1.5)
-                pid_controller.reset_yaw_zero(sensors)
-                pid_controller.forward(sensors)
             else:
                 continue
             
