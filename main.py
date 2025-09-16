@@ -38,9 +38,12 @@ def main():
     
     switch_to_letters()  # Start in letter mode, or switch as needed
 
+    # --- Reset yaw to zero at the start ---
+    pid_controller.reset_yaw_zero(sensors)
+
     while not rospy.is_shutdown():
         # Run one frame of inference and get detections
-        detections = run_camera_inference(camera_index=2)  # You may want to refactor run_camera_inference to yield detections per frame
+        detections = run_camera_inference(camera_index=2)
 
         if detections:
             action, value = handle_detection(detections)
@@ -51,43 +54,79 @@ def main():
                     switch_to_signs()
                     print(f"Collected letter: {value}")
                     print("Switched to signs")
+                    pid_controller.reset_yaw_zero(sensors)  # Reset before moving forward
                     pid_controller.forward(sensors)
             elif action == "skip":
                 print(f"Penalty! Red letter detected.")
                 print("I DIDNT TAKE THE RED LETTER AND KEPT MOVING")
+                pid_controller.reset_yaw_zero(sensors)  # Reset before moving forward
                 pid_controller.forward(sensors)
             if action == "turn" and value:
                 if value == "right":
                     print("Preparing to turn right...")
                     switch_to_letters()
-                    pid_controller.turn_right(sensors)
+                    pid_controller.turn_right(sensors)  # <--- Do NOT reset yaw here
                     print("Turned Right")
+                    pid_controller.reset_yaw_zero(sensors)  # <--- Reset after turn, before next forward
                 elif value == "left":
                     print("Preparing to turn left...")
                     switch_to_letters()
-                    pid_controller.turn_left(sensors)
+                    pid_controller.turn_left(sensors)  # <--- Do NOT reset yaw here
                     print("Turned Left")
+                    pid_controller.reset_yaw_zero(sensors)  # <--- Reset after turn, before next forward
             else:
                 print("No relevant detection, continue navigation...")
 
         else:
             action, value = handle_detection(detections)
             switch_to_signs()
-            time.sleep(1.5)
+            time.sleep(0.5)
             switch_to_letters()
-            time.sleep(1.5)
+            print("here 0")
+            time.sleep(0.5)
             while not detections:
+                print("here 1")
+                pid_controller.reset_yaw_zero(sensors)
+                pid_controller.forward(sensors)
+                switch_to_signs()
+                time.sleep(0.5)
+                switch_to_letters()
+                time.sleep(0.5)
+                print("here 2 ")
+                pid_controller.turn_right(sensors) 
+                pid_controller.reset_yaw_zero(sensors)  
+                switch_to_signs()
+                time.sleep(1.5)
+                switch_to_letters()
+                time.sleep(1.5)
+                print("here 3 ")
+                pid_controller.forward(sensors)
+                print("here 4")
+                pid_controller.reset_yaw_zero(sensors)
+                switch_to_signs()
+                time.sleep(1.5)
+                switch_to_letters()
+                time.sleep(1.5)
+                pid_controller.turn_left(sensors)  # <--- Do NOT reset yaw here
+                pid_controller.reset_yaw_zero(sensors)
+                switch_to_signs()
+                time.sleep(1.5)
+                switch_to_letters()
+                time.sleep(1.5)
+                pid_controller.turn_left(sensors)  # <--- Do NOT reset yaw here
+                pid_controller.reset_yaw_zero(sensors)
+                switch_to_signs()
+                time.sleep(1.5)
+                switch_to_letters()
+                time.sleep(1.5)
                 pid_controller.forward(sensors)
                 switch_to_signs()
                 time.sleep(1.5)
                 switch_to_letters()
                 time.sleep(1.5)
-                pid_controller.turn_right(sensors)
-                switch_to_signs()
-                time.sleep(1.5)
-                switch_to_letters()
-                time.sleep(1.5)
-                pid_controller.forward(sensors)
+                pid_controller.reset_yaw_zero(sensors)
+                pid_controller.turn_right(sensors)  # <--- Do NOT reset yaw here
+                pid_controller.reset_yaw_zero(sensors)
                 switch_to_signs()
                 time.sleep(1.5)
                 switch_to_letters()
@@ -97,11 +136,13 @@ def main():
                 time.sleep(1.5)
                 switch_to_letters()
                 time.sleep(1.5)
+                pid_controller.reset_yaw_zero(sensors)
                 pid_controller.turn_left(sensors)
                 switch_to_signs()
                 time.sleep(1.5)
                 switch_to_letters()
                 time.sleep(1.5)
+                pid_controller.reset_yaw_zero(sensors)
                 pid_controller.forward(sensors)
             else:
                 continue
