@@ -9,8 +9,8 @@ from Computer_Vision_Functions.cv import initialize_cv, handle_detection, switch
 
 # --- PID parameters ---
 Kp_yaw = 0.4
-Ki_yaw = 0.01
-Kd_yaw = 0.05
+Ki_yaw = 0
+Kd_yaw = 0.02
 Kp_d = 0.5
 Ki_d = 0.01
 Kd_d = 0.1
@@ -90,8 +90,8 @@ def turn_right(sensors):
         # Debug output
         rospy.loginfo(f"Target: {math.degrees(target_yaw):.1f}°, Current: {math.degrees(current_yaw):.1f}°, Error: {math.degrees(error):.1f}°")
         
-        # Check if we've reached target angle (within ~2 degrees)
-        if abs(error) < 0.05:  # Reduced tolerance
+        # Check if we've reached target angle (within ~2 degrees)        
+        if abs(math.degrees(error)) < 30:  # Reduced tolerance
             rospy.loginfo("Target angle reached!")
             stop()
             return
@@ -141,7 +141,7 @@ def turn_left(sensors):
         rospy.loginfo(f"Target: {math.degrees(target_yaw):.1f}°, Current: {math.degrees(current_yaw):.1f}°, Error: {math.degrees(error):.1f}°")
         
         # Check if we've reached target angle (within ~2 degrees)
-        if abs(error) < 0.05:  # Reduced tolerance
+        if abs(math.degrees(error)) < 30:  # Reduced tolerance
             rospy.loginfo("Target angle reached!")
             stop()
             return
@@ -262,10 +262,6 @@ def back(sensors):   # <-- add sensors argument
 
             detections = run_camera_inference(camera_index=2)
 
-            twist.linear.x = 0.5
-            cmd_pub.publish(twist)
-            if (now - last_time).to_sec() > max_b_time * 2 + 0.5:
-                stop()
             if detections:
                 action, value = handle_detection(detections)
                 rospy.loginfo(f"Detections during back: {detections}")
@@ -279,7 +275,15 @@ def back(sensors):   # <-- add sensors argument
                     rospy.loginfo("Penalty letter detected, skipping...")
                     pid_controller.forward(sensors)
 
-                elif action == "turn" and value:
+            twist.linear.x = 0.5
+            cmd_pub.publish(twist)
+            if (now - last_time).to_sec() > max_b_time * 2 + 0.5:
+                stop()
+            if detections:
+                action, value = handle_detection(detections)
+                rospy.loginfo(f"Detections during back: {detections}")
+
+                if action == "turn" and value:
                     rospy.loginfo(f"Sign detected: {value}")
                     if value == "right":
                         pid_controller.turn_right(sensors)
