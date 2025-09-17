@@ -91,7 +91,7 @@ def turn_right(sensors):
         rospy.loginfo(f"Target: {math.degrees(target_yaw):.1f}°, Current: {math.degrees(current_yaw):.1f}°, Error: {math.degrees(error):.1f}°")
         
         # Check if we've reached target angle (within ~2 degrees)        
-        if abs(math.degrees(error)) < 30:  # Reduced tolerance
+        if math.degrees(current_yaw) >= 88:  # Reduced tolerance
             rospy.loginfo("Target angle reached!")
             stop()
             return
@@ -121,6 +121,7 @@ def turn_left(sensors):
     integral_yaw = 0
     prev_error_yaw = 0
     
+
     current_yaw = get_zeroed_yaw(sensors)
     target_yaw = normalize_angle(current_yaw + math.pi/2)  # 90 degrees relative to current
     
@@ -141,7 +142,7 @@ def turn_left(sensors):
         rospy.loginfo(f"Target: {math.degrees(target_yaw):.1f}°, Current: {math.degrees(current_yaw):.1f}°, Error: {math.degrees(error):.1f}°")
         
         # Check if we've reached target angle (within ~2 degrees)
-        if abs(math.degrees(error)) < 30:  # Reduced tolerance
+        if math.degrees(current_yaw) >= -88:  # Reduced tolerance
             rospy.loginfo("Target angle reached!")
             stop()
             return
